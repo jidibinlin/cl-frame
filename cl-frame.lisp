@@ -138,30 +138,29 @@
     (case lf-length
       (1 (progn
            (when (>= length 256)
-             (error 'too-large-length)
-             (setf length-buf (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0))
-             (setf (aref length-buf 0) (aref (bit-smasher:octets<- length) 0))))
-       (2 (progn
-            (when (>= length 65536)
-              (error 'too-large-length))
-            (setf length-buf (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0))
-            (put-uint16 byter-order length-buf length)))
-       (3 (progn
-            (when (>= length 16777216)
-              (error 'too-large-length)
-              (setf length-buf (make-array 3 :element-type '(unsigned-byte 8) :initial-element 0))
-              (put-uint24 byte-order length-buf length))))
-       (4 (progn
-            (when (>= length 4294967296)
-              (error 'too-large-length)
-              (setf length-buf (make-array 4 :element-type '(unsigned-byte 8) :initial-element 0))
-              (put-uint32 byte-order length-buf length))))
-       (8 (progn
-            (when (>= length 18446744073709551616)
-              (error 'too-large-length))
-            (setf length-buf (make-array 8 :element-type '(unsigned-byte 8) :initial-element 0))
-            (put-uint64 byte-order length-buf length)))
-       )
-      (write-sequence (concatenate 'vector length-buf buf) (iostream codec))
-      (force-output (iostream codec))))
-  )
+             (error 'too-large-length))
+           (setf length-buf (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0))
+           (setf (aref length-buf 0) (aref (bit-smasher:octets<- length) 0))))
+      (2 (progn
+           (when (>= length 65536)
+             (error 'too-large-length))
+           (setf length-buf (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0))
+           (put-uint16 byter-order length-buf length)))
+      (3 (progn
+           (when (>= length 16777216)
+             (error 'too-large-length))
+           (setf length-buf (make-array 3 :element-type '(unsigned-byte 8) :initial-element 0))
+           (put-uint24 byte-order length-buf length)))
+      (4 (progn
+           (when (>= length 4294967296)
+             (error 'too-large-length))
+           (setf length-buf (make-array 4 :element-type '(unsigned-byte 8) :initial-element 0))
+           (put-uint32 byte-order length-buf length)))
+      (8 (progn
+           (when (>= length 18446744073709551616)
+             (error 'too-large-length))
+           (setf length-buf (make-array 8 :element-type '(unsigned-byte 8) :initial-element 0))
+           (put-uint64 byte-order length-buf length)))
+      )
+    (write-sequence (concatenate 'vector length-buf buf) (iostream codec))
+    (force-output (iostream codec))))
