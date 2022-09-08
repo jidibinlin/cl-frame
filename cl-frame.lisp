@@ -57,8 +57,7 @@
          (lf-adjustment (dec-length-adjustment (dec-length-field-length codec)))
          (initial-bytes-to-strip (dec-initial-bytes-to-strip (dec-length-field-length codec)))
          (header)
-         (msg)
-         )
+         (msg))
     (when (> lf-offset 0)
       (setf header (make-array lf-offset :element-type '(unsigned-byte 8)))
       (read-sequence header (iostream codec) :start 0 :end lf-offset)
@@ -68,7 +67,7 @@
       (setf msg (make-array msg-len :element-type '(unsigned-byte 8) :initial-element 0))
       (read-sequence msg (iostream codec) :start 0 :end msg-len)
 
-      (concatenate 'vector header lenbuf msg)
+      (subseq (concatenate 'vector header lenbuf msg) initial-bytes-to-strip)
       )
     )
   )
