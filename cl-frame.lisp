@@ -41,22 +41,22 @@
     :type stream
     )))
 
-(defmethod read-sequence-atlist (sequence stream &key start end)
-  (let ((position (read-sequence sequence stream :start start :end end)))
-    (when (< position end)
-      (setf start position)
-      (read-sequence-atlist sequence stream :start position :end end)))
-  )
+;; (defmethod read-sequence-atlist (sequence stream &key start end)
+;;   (let ((position (read-sequence sequence stream :start start :end end)))
+;;     (when (< position end)
+;;       (setf start position)
+;;       (read-sequence-atlist sequence stream :start position :end end)))
+;;   )
 
 (defmethod read-frame ((codec length-field-based-frame-codec))
   ;;read date from stream stored in the `codec' and decode it againest the codec
   ;;`CLOSED-STREAM-ERROR' will be thrown if the stream is closed, you should handler this err by yourself
-  (let* ((byte-order (dec-length-field-length (dec-length-field-length codec)))
-         (lf-offset (dec-length-field-offset (dec-length-field-length codec)))
-         (lf-length (dec-length-field-length (dec-length-field-length codec)))
-         (lf-adjustment (dec-length-adjustment (dec-length-field-length codec)))
-         (initial-bytes-to-strip (dec-initial-bytes-to-strip (dec-length-field-length codec)))
-         (header)
+  (let* ((byte-order (dec-length-field-length (decoder-config codec)))
+         (lf-offset (dec-length-field-offset (decoder-config codec)))
+         (lf-length (dec-length-field-length (decoder-config codec)))
+         (lf-adjustment (dec-length-adjustment (decoder-config codec)))
+         (initial-bytes-to-strip (dec-initial-bytes-to-strip (decoder-config codec)))
+         (header (make-array 0 :element-type '(unsigned-byte 8)))
          (msg))
     (when (> lf-offset 0)
       (setf header (make-array lf-offset :element-type '(unsigned-byte 8)))
@@ -67,9 +67,7 @@
       (setf msg (make-array msg-len :element-type '(unsigned-byte 8) :initial-element 0))
       (read-sequence msg (iostream codec) :start 0 :end msg-len)
 
-      (subseq (concatenate 'vector header lenbuf msg) initial-bytes-to-strip)
-      )
-    )
+      (subseq (concatenate 'vector header lenbuf msg) initial-bytes-to-strip)))
   )
 
 (defmethod get-unadjusted-frame-length ((codec length-field-based-frame-codec))
@@ -129,7 +127,7 @@
          (length (+ (length buf) lf-adjustment))
          (length-buf)
          )
-	(when (enc-length-includes-length-field-length enc-config)
+	(when (enc-length-includes-length-field-length (encoder-config codec))
       (setf length (+ length lf-length)))
 
     (when (<= length 0)
@@ -144,7 +142,7 @@
            (when (>= length 65536)
              (error 'too-large-length))
            (setf length-buf (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0))
-           (put-uint16 byter-order length-buf length)))
+           (put-uint16 byte-order length-buf length)))
       (3 (progn
            (when (>= length 16777216)
              (error 'too-large-length))

@@ -17,12 +17,18 @@
   :license "MIT-style"
   :version "0.0.1"
   :depends-on (:cl-frame
-               :rove)
+               :rove
+               :usocket
+               :bt-semaphore
+               :flexi-streams)
   :serial t
   :pathname "tests/"
   :components((:module "cl-frame/tests.binary"
                :serial t
                :pathname ""
-               :components ((:file "binary-test"))
-               ))
+               :components ((:file "binary-test")))
+              (:module "cl-frame/tests.read-frame"
+               :serial t
+               :pathname ""
+               :components ((:file "read-frame-test"))))
   )

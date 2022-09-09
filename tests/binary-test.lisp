@@ -6,15 +6,14 @@
 
 (defpackage #:cl-frame/tests.binary
   (:use #:cl
-        #:rove)
-  (:export :run))
+        #:rove))
 
 (in-package #:cl-frame/tests.binary)
 
-(defun test ()
-  "Run all tests in the tests suite."
-  (rove:run-suite *package*)
-  )
+;; (defun test ()
+;;   "Run all tests in the tests suite."
+;;   (rove:run-suite *package*)
+;;   )
 
 (deftest bigendian-put-uint16
     (testing "bigendian put uint16"
