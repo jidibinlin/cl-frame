@@ -35,7 +35,7 @@
 
 
 (defmethod put-uint24 ((obj BigEndian) buf uint24)
-  (declare (type (array (unsigned-byte 8) (6)) buf))
+  (declare (type (array (unsigned-byte 8) (3)) buf))
   (let* ((octs (bit-smasher:octets<- uint24))
          (buf-last-idx (- (length buf) 1))
          (octs-last-idx (- (length octs) 1))
@@ -87,7 +87,7 @@
 
 
 (defmethod put-uint24 ((obj LittlEndian) buf uint24)
-  (declare (type (array (unsigned-byte 8) (6)) buf))
+  (declare (type (array (unsigned-byte 8) (3)) buf))
   (let* ((octs (bit-smasher:octets<- uint24)))
 
 	(loop for i from 0 below (length octs)
