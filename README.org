@@ -1,5 +1,5 @@
 * cl-frame
-cl-frame is inspired by [[https://github.com/smallnest/goframe][goframe]]. cl-frame provide read-frame and write-frame function for stream to send and receive framed data.
+cl-frame is inspired from [[https://github.com/smallnest/goframe][goframe]]. cl-frame provide read-frame and write-frame function for stream to send and receive framed data.
 cl-frame planed to implement
 + [DONE] length-field-based-frame-codec
 + [TODO] fixed-length-frame-codec
@@ -15,10 +15,10 @@ cl-frame planed to implement
   (READ-FRAME (LENGTH-FIELD-BASED-FRAME-CODEC))
 #+end_src
 ** examples
-You can find examples in tests/read-write-frame-tests.lisp. Each test entry is a read and write frame pair。
-*I will only introduce length-field-based-frame-codec here for the reason it`s the monst complicated codec。
+You can find examples in tests/read-write-frame-tests.lisp. Each test entry is a read and write frame pair.
+*I will only introduce length-field-based-frame-codec here for the reason it`s the most complicated codec.*
 *** length-field-based-frame-codec
-length-field-based-frame is one frame package way who makes a fixed length field as the header of a frame and represents the length of the whole msg or only content。
+length-field-based-frame is one frame package way who makes a fixed length field as the header of a frame to represents the length of the whole msg or only content。
 #+begin_src text
   BEFORE DECODE (14 bytes)         AFTER DECODE (14 bytes)
   +--------+----------------+      +--------+----------------+
@@ -79,7 +79,7 @@ now you can use write-frame and read-frame to send and receive frame data
   (cl-frame:read-frame length-field-based-frame-codec)
 #+end_src
 
-For how config struct`s parameters controlled the format of the frame. I has copy descriptions from Netty javadoc, I have implemented all of them in tests/read-write-frame-tests.lisp
+For how config struct`s parameters controlled the format of the frame. I has copy descriptions from Netty javadoc and implement all of them in tests/read-write-frame-tests.lisp
 
 **** 2 bytes length field at offset 0, strip header
 
