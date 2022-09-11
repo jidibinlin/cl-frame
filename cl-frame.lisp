@@ -10,8 +10,9 @@
   ;; config for encoder
   (byte-order big-endian :type (or bigendian littlendian)) ;; byte order of the message
   (length-field-length 0 :type integer) ;; length of the length field to hold the length of the message
+  (length-field-offset 0 :type integer) ;; length field start position
   (length-adjustment 0 :type integer)   ;; compensation for the msg length
-  (length-includes-length-field-length t :type boolean) ;; whether include the length field length in the msg length
+  (length-includes-length-field-length nil :type boolean) ;; whether include the length field length in the msg length
   )
 
 (defstruct (decoder-config (:conc-name dec-))
@@ -78,31 +79,31 @@
       (1 (progn
            (setf len-buf (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 1)
-           (length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- len-buf)))
        (values len-buf length))
 
       (2 (progn
            (setf len-buf (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 2)
-           (length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- len-buf)))
        (values len-buf length))
 
       (3 (progn
            (setf len-buf (make-array 3 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 3)
-           (length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- len-buf)))
        (values len-buf length))
 
       (4 (progn
            (setf len-buf (make-array 4 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 4)
-           (length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- len-buf)))
        (values len-buf length))
 
       (8 (progn
            (setf len-buf (make-array 8 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 8)
-           (length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- len-buf)))
        (values len-buf length))
       )
     )
@@ -111,9 +112,11 @@
 
 (define-condition too-large-length-error (error) ())
 (define-condition minus-length-adjustment-too-small-error (error) ())
+(define-condition length-field-offset-mismatch-header (error) ())
 
-(defmethod write-frame ((codec length-field-based-frame-codec) buf)
+(defmethod write-frame ((codec length-field-based-frame-codec) buf &key header)
   ;; encode the buf with length header and write to the socket stream stored in the `codec'
+  ;; if `header' is not nil header will be prepeneded to the buf which composed by length header and `buf'
   ;; `CLOSED-STREAM-ERROR' will be thrown if the stream is closed, you should handler this err by yourself
   ;; `TOO-LARGE-LENGTH' will be thrown if width of  length-field can`t hold the length
   ;; `MINUS-LENGTH-ADJUSTMENT-TOO-SMALL-ERROR' will be thrown if minused length-adjustment make the encoded buf length minus
@@ -123,10 +126,19 @@
          (lf-length (enc-length-field-length (encoder-config codec)))
          ;; length to be add to the length field
          (lf-adjustment (enc-length-adjustment (encoder-config codec)))
+         ;; where length field start
+         (lf-offset (enc-length-field-offset (encoder-config codec)))
          ;; length includes the length field length
          (length (+ (length buf) lf-adjustment))
          (length-buf)
          )
+	(when (not (equal nil header))
+      (when (> (length header)
+               (1- (expt 2 lf-offset)))
+        (error 'length-field-offset-mismatch-header)
+        )
+      )
+
 	(when (enc-length-includes-length-field-length (encoder-config codec))
       (setf length (+ length lf-length)))
 
@@ -159,5 +171,5 @@
            (setf length-buf (make-array 8 :element-type '(unsigned-byte 8) :initial-element 0))
            (put-uint64 byte-order length-buf length)))
       )
-    (write-sequence (concatenate 'vector length-buf buf) (iostream codec))
+    (write-sequence (concatenate 'vector header length-buf buf) (iostream codec))
     (force-output (iostream codec))))
