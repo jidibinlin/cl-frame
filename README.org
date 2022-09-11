@@ -15,6 +15,6 @@ cl-frame planed to implement
   (READ-FRAME (LENGTH-FIELD-BASED-FRAME-CODEC))
 #+end_src
 ** examples
-You can find examples in tests directory.
+You can find examples in tests/read-write-frame-tests.lisp. Each test entry is a read and write frame pair
 * License
 Specify license here

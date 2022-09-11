@@ -4,14 +4,14 @@
 ;;; license that can be found in the LICENSE file or at
 ;;; https://opensource.org/licenses/MIT.
 
-(defpackage #:cl-frame/test.read-frame
+(defpackage #:cl-frame/test.read-write-frame
   (:use #:cl
         #:rove
         #:usocket)
   (:shadowing-import-from #:rove
                           #:*debug-on-error*))
 
-(in-package #:cl-frame/test.read-frame)
+(in-package #:cl-frame/test.read-write-frame)
 
 (setup
   (defparameter listener (usocket:socket-listen "localhost" 1990 :element-type '(unsigned-byte 8)))

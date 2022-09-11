@@ -27,8 +27,8 @@
                :serial t
                :pathname ""
                :components ((:file "binary-test")))
-              (:module "cl-frame/tests.read-frame"
+              (:module "cl-frame/tests.read-write-frame"
                :serial t
                :pathname ""
-               :components ((:file "read-frame-test"))))
+               :components ((:file "read-write-frame-tests"))))
   )
