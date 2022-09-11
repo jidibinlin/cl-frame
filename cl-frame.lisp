@@ -42,13 +42,6 @@
     :type stream
     )))
 
-;; (defmethod read-sequence-atlist (sequence stream &key start end)
-;;   (let ((position (read-sequence sequence stream :start start :end end)))
-;;     (when (< position end)
-;;       (setf start position)
-;;       (read-sequence-atlist sequence stream :start position :end end)))
-;;   )
-
 (defmethod read-frame ((codec length-field-based-frame-codec))
   ;;read date from stream stored in the `codec' and decode it againest the codec
   ;;`CLOSED-STREAM-ERROR' will be thrown if the stream is closed, you should handler this err by yourself
@@ -64,11 +57,17 @@
       (read-sequence header (iostream codec) :start 0 :end lf-offset)
       )
     (multiple-value-bind (lenbuf msg-len) (get-unadjusted-frame-length codec)
+      (setf header (concatenate 'vector header lenbuf))
       (setf msg-len (+ msg-len lf-adjustment))
-      (setf msg (make-array msg-len :element-type '(unsigned-byte 8) :initial-element 0))
-      (read-sequence msg (iostream codec) :start 0 :end msg-len)
-
-      (subseq (concatenate 'vector header lenbuf msg) initial-bytes-to-strip)))
+      (let* ((stay-len (- (length header) initial-bytes-to-strip))
+             (retbuf-len (+ stay-len msg-len)))
+        (setf msg (make-array retbuf-len :element-type '(unsigned-byte 8) :initial-element 0))
+        (loop
+          for i from initial-bytes-to-strip to (1- (length header))
+          for msg-pos from 0 to (1- stay-len)
+          do (setf (aref msg msg-pos) (aref header i)))
+        (read-sequence msg (iostream codec) :start stay-len)
+        msg)))
   )
 
 (defmethod get-unadjusted-frame-length ((codec length-field-based-frame-codec))
@@ -171,5 +170,11 @@
            (setf length-buf (make-array 8 :element-type '(unsigned-byte 8) :initial-element 0))
            (put-uint64 byte-order length-buf length)))
       )
-    (write-sequence (concatenate 'vector header length-buf buf) (iostream codec))
-    (force-output (iostream codec))))
+	(write-sequence header (iostream codec))
+    (write-sequence length-buf (iostream codec))
+    (write-sequence buf (iostream codec))
+
+    ;; (write-sequence (concatenate 'vector header length-buf buf) (iostream codec))
+    (force-output (iostream codec))
+    )
+  )

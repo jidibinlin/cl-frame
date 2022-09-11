@@ -1,0 +1,20 @@
+* cl-frame
+cl-frame is inspired by [[https://github.com/smallnest/goframe][goframe]]. cl-frame provide read-frame and write-frame function for stream to send and receive framed data.
+cl-frame planed to implement
++ [DONE] length-field-based-frame-codec
++ [TODO] fixed-length-frame-codec
++ [TODO] line-based-frame-codec
++ [TODO] delimiter-based-frame-codce
+** methods definition
+*** write-frame
+#+begin_src lisp
+  (WRITE-FRAME (LENGTH-FIELD-BASED-FRAME-CODEC T))
+#+end_src
+*** read-frame
+#+begin_src lisp
+  (READ-FRAME (LENGTH-FIELD-BASED-FRAME-CODEC))
+#+end_src
+** examples
+You can find examples in tests directory.
+* License
+Specify license here
