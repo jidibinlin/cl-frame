@@ -69,6 +69,42 @@
                   (concatenate 'vector head body)))
         "2 bytes length field at offset 0, do not strip header")))
 
+(deftest No-offset-Lenght-width-two-No-adjustment-no-strip-large
+  (testing "2 bytes length field at offset 0, do not strip header-large"
+    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                :length-field-length 2
+                                                                :length-adjustment 0
+                                                                :length-includes-length-field-length nil))
+                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                :length-field-offset 0
+                                                                :length-field-length 2
+                                                                :length-adjustment 0
+                                                                :initial-bytes-to-strip 0))
+                      (msg (make-array (1- (expt 2 16)) :element-type '(unsigned-byte 8) :initial-element 12)))
+                  (bt:make-thread (lambda ()
+                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                      (unwind-protect (progn
+                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                             :encoder-config enc-config
+                                                                                             :decoder-config dec-config
+                                                                                             :iostream (usocket:socket-stream conn))
+                                                                              msg))
+                                        (usocket:socket-close conn)))))
+                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                    (unwind-protect
+                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                      :decoder-config dec-config
+                                                                                                      :iostream stream))
+                      (usocket:socket-close socket)
+                      )))
+
+                (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
+                      (body (make-array (1- (expt 2 16)) :element-type '(unsigned-byte 8) :initial-element 12)))
+                  (cl-frame:put-uint16 cl-frame:big-endian head (1- (expt 2 16)))
+
+                  (concatenate 'vector head body)))
+        "2 bytes length field at offset 0, do not strip header-large")))
+
 ;; * 2 bytes length field at offset 0, strip header
 ;; lengthFieldOffset   = 0
 ;; lengthFieldLength   = 2
