@@ -197,6 +197,7 @@
     )))
 
 (defmethod write-frame ((codec line-based-frame-codec) buf &key header)
+  ;; keyward `header' will be ignored for this function
   (loop for singal-byte across buf
         do (progn
              (write-byte singal-byte (iostream codec))))
@@ -233,6 +234,7 @@
    ))
 
 (defmethod write-frame ((codec delimited-based-frame-codec) buf &key header)
+  ;; keyward `header' will be ignored for this function
   (loop for singal-byte across buf
         do (progn
              (write-byte singal-byte (iostream codec))))
@@ -268,6 +270,7 @@
 
 (define-condition unexpected-buf-length (error) ())
 (defmethod write-frame ((codec fixed-length-based-frame-codec) buf &key header)
+  ;; keyward `header' will be ignored for this function
   (when (/= 0
             (mod (length buf) (frame-length codec)))
     (error 'unexpected-buf-length)
