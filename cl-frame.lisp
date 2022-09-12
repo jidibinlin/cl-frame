@@ -5,7 +5,12 @@
 (defvar big-endian (make-bigendian))
 (defvar little-endian (make-littlendian))
 
+(defgeneric write-frame (obj buf &key &allow-other-keys)
+  (:documentation "pack buf to frame and send it")
+  )
 
+;; * length field based frame codec
+
 (defstruct (encoder-config (:conc-name enc-))
   ;; config for encoder
   (byte-order big-endian :type (or bigendian littlendian)) ;; byte order of the message
@@ -178,3 +183,36 @@
     (force-output (iostream codec))
     )
   )
+
+;; line based frame codec
+
+
+(defclass line-based-frame-codec()
+  ((iostream
+    :initarg :iostream
+    :accessor iostream
+    :initform nil
+    :type stream
+    )))
+
+
+(defmethod write-frame ((codec line-based-frame-codec) buf &key header)
+  (loop for singal-byte across buf
+        do (progn
+             (write-byte singal-byte (iostream codec))))
+  (write-byte (aref (flexi-streams:string-to-octets "\n") 0) (iostream codec))
+  (force-output (iostream codec))
+  )
+
+(defmethod read-frame ((codec line-based-frame-codec))
+  (let ((crlfbytes (aref (flexi-streams:string-to-octets "\n") 0))
+        (buf (make-array 0 :fill-pointer t :adjustable t)))
+    (do ((singal-byte (read-byte (iostream codec)) (read-byte (iostream codec))))
+        ((eq singal-byte crlfbytes) buf)
+      (format t "~a" singal-byte)
+      (vector-push-extend singal-byte buf))
+    )
+  )
+
+;; delimiter based frame codec
+

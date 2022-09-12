@@ -1,9 +1,9 @@
 * cl-frame
-cl-frame is inspired from [[https://github.com/smallnest/goframe][goframe]]. cl-frame provide read-frame and write-frame function for stream to send and receive framed data.
+cl-frame is inspired from [[https://github.com/smallnest/goframe][goframe]]. cl-frame provides read-frame and write-frame function for stream to send and receive framed data.
 cl-frame planed to implement
 + [DONE] length-field-based-frame-codec
 + [TODO] fixed-length-frame-codec
-+ [TODO] line-based-frame-codec
++ [DONE] line-based-frame-codec
 + [TODO] delimiter-based-frame-codce
 ** methods definition
 *** write-frame
@@ -18,7 +18,7 @@ cl-frame planed to implement
 You can find examples in tests/read-write-frame-tests.lisp. Each test entry is a read and write frame pair.
 *I will only introduce length-field-based-frame-codec here for the reason it`s the most complicated codec.*
 *** length-field-based-frame-codec
-length-field-based-frame is one frame package way who makes a fixed length field as the header of a frame to represents the length of the whole msg or only content。
+length-field-based-frame is one frame package way who makes a fixed length field as the header of a frame to represent the length of the whole msg or only content。
 #+begin_src text
   BEFORE DECODE (14 bytes)         AFTER DECODE (14 bytes)
   +--------+----------------+      +--------+----------------+
@@ -35,7 +35,7 @@ It`s can be simple just like above。But it`s also can be complicated.
    +------+--------+------+----------------+      +------+----------------+
 #+end_src
 
-I use a pair config struct to control how to encoded and decode frame. 
+I use a paired config struct to control how to encoded and decode frame. 
 #+begin_src lisp
   (defstruct (encoder-config (:conc-name enc-))
     ;; config for encoder
@@ -210,8 +210,6 @@ If you turned on the lengthIncludesLengthFieldLength flag in the EncoderConfig, 
  + 0x000E | "HELLO, WORLD" |
  +--------+----------------+
 #+end_src
-
-
 
 * License
 Specify license here

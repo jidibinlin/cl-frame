@@ -6,7 +6,8 @@
   :license  "MIT-style"
   :version "0.0.1"
   :serial t
-  :depends-on(#:bit-smasher)
+  :depends-on(#:bit-smasher
+              #:flexi-streams)
   :components ((:file "package")
                (:file "binary")
                (:file "cl-frame")))
