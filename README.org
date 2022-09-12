@@ -8,11 +8,17 @@ cl-frame planed to implement
 ** methods definition
 *** write-frame
 #+begin_src lisp
-  (WRITE-FRAME (LENGTH-FIELD-BASED-FRAME-CODEC T))
+  (defgeneric write-frame (obj buf &key &allow-other-keys)
+    (:documentation "pack buf to frame and send it")
+    )
 #+end_src
+#+attr_shortcode: :type warning :title warning :open true
+#+begin_admonition
+keyward arguments only work for length-field-based-frame-codec
+#+end_admonition
 *** read-frame
 #+begin_src lisp
-  (READ-FRAME (LENGTH-FIELD-BASED-FRAME-CODEC))
+  (defgeneric read-frame (obj buf))
 #+end_src
 ** examples
 You can find examples in tests/read-write-frame-tests.lisp. Each test entry is a read and write frame pair.
