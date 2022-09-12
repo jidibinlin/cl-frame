@@ -195,7 +195,6 @@
     :type stream
     )))
 
-
 (defmethod write-frame ((codec line-based-frame-codec) buf &key header)
   (loop for singal-byte across buf
         do (progn
@@ -209,10 +208,38 @@
         (buf (make-array 0 :fill-pointer t :adjustable t)))
     (do ((singal-byte (read-byte (iostream codec)) (read-byte (iostream codec))))
         ((eq singal-byte crlfbytes) buf)
-      (format t "~a" singal-byte)
       (vector-push-extend singal-byte buf))
     )
   )
 
 ;; delimiter based frame codec
 
+
+(defclass delimited-based-frame-codec()
+  ((iostream
+    :initarg :iostream
+    :accessor iostream
+    :initform nil
+    :type stream
+    )
+   (delimiter
+    :initarg :delimiter
+    :accessor delimiter
+    :initform (aref (flexi-streams:string-to-octets "\n") 0)
+    :type integer)
+   ))
+
+(defmethod write-frame ((codec delimited-based-frame-codec) buf &key header)
+  (loop for singal-byte across buf
+        do (progn
+             (write-byte singal-byte (iostream codec))))
+  (write-byte (delimiter codec) (iostream codec))
+  (force-output (iostream codec))
+  )
+
+(defmethod read-frame ((codec delimited-based-frame-codec))
+  (let ((buf (make-array 0 :fill-pointer t :adjustable t)))
+    (do ((singal-byte (read-byte (iostream codec)) (read-byte (iostream codec))))
+        ((eq singal-byte (delimiter codec)) buf)
+      (vector-push-extend singal-byte buf)))
+  )

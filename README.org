@@ -4,7 +4,7 @@ cl-frame planed to implement
 + [DONE] length-field-based-frame-codec
 + [TODO] fixed-length-frame-codec
 + [DONE] line-based-frame-codec
-+ [TODO] delimiter-based-frame-codce
++ [DONE] delimiter-based-frame-codec
 ** methods definition
 *** write-frame
 #+begin_src lisp

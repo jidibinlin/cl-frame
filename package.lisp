@@ -4,6 +4,7 @@
   (:use #:cl)
   (:export #:length-field-based-frame-codec
            #:line-based-frame-codec
+           #:delimited-based-frame-codec
            big-endian
            little-endian
            #:encoder-config

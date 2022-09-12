@@ -413,5 +413,27 @@
         "send-receive-12345"))
   )
 
+;; * delimiter based frame codec
 
-;; (defparameter listener (usocket:socket-listen "localhost" 1990 :element-type '(unsigned-byte 8)))
+(deftest delimited-based-frame-codec
+  (testing "send-receive-12345"
+    (ok (equalp (progn
+                  (bt:make-thread (lambda ()
+                                    (let* ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8)))
+                                           (codec (make-instance 'cl-frame:delimited-based-frame-codec
+                                                                 :delimiter (aref (flexi-streams:string-to-octets "\n") 0)
+                                                                 :iostream (usocket:socket-stream conn))))
+                                      (unwind-protect (progn
+                                                        (cl-frame:write-frame codec
+                                                                              (flexi-streams:string-to-octets "12345")))
+                                        (usocket:socket-close conn)))))
+
+                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                    (unwind-protect
+                         (cl-frame:read-frame (make-instance 'cl-frame:delimited-based-frame-codec
+                                                             :delimiter (aref (flexi-streams:string-to-octets "\n") 0)
+                                                             :iostream stream))
+                      (usocket:socket-close socket))))
+                (flexi-streams:string-to-octets "12345"))
+        "send-receive-12345"))
+  )
