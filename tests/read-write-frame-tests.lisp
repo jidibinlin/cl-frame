@@ -437,3 +437,28 @@
                 (flexi-streams:string-to-octets "12345"))
         "send-receive-12345"))
   )
+
+;; * fixed length based frame codec
+
+(deftest fixed-length-based-frame-codec
+  (testing "send-receive-buf-with-length-100"
+    (ok (equalp (progn
+                  (bt:make-thread (lambda ()
+                                    (let* ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8)))
+                                           (codec (make-instance 'cl-frame:fixed-length-based-frame-codec
+                                                                 :frame-length 100
+                                                                 :iostream (usocket:socket-stream conn))))
+                                      (unwind-protect (progn
+                                                        (cl-frame:write-frame codec
+                                                                              (make-array 100 :element-type '(unsigned-byte 8) :initial-element 1)))
+                                        (usocket:socket-close conn)))))
+
+                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                    (unwind-protect
+                         (cl-frame:read-frame (make-instance 'cl-frame:fixed-length-based-frame-codec
+                                                             :frame-length 100
+                                                             :iostream stream))
+                      (usocket:socket-close socket))))
+                (make-array 100 :element-type '(unsigned-byte 8) :initial-element 1))
+        "send-receive-buf-with-length-100"))
+  )

@@ -71,8 +71,9 @@
           for i from initial-bytes-to-strip to (1- (length header))
           for msg-pos from 0 to (1- stay-len)
           do (setf (aref msg msg-pos) (aref header i)))
-        (read-sequence msg (iostream codec) :start stay-len)
-        msg)))
+        (do ((position (read-sequence msg (iostream codec) :start stay-len)
+                       (read-sequence msg (iostream codec) :start position :end (length msg))))
+            ((= position (length msg)) msg)))))
   )
 
 (defmethod get-unadjusted-frame-length ((codec length-field-based-frame-codec))
@@ -242,4 +243,41 @@
     (do ((singal-byte (read-byte (iostream codec)) (read-byte (iostream codec))))
         ((eq singal-byte (delimiter codec)) buf)
       (vector-push-extend singal-byte buf)))
+  )
+
+;; fixed length based frame codec
+
+
+(defclass fixed-length-based-frame-codec()
+  ((iostream
+    :initarg :iostream
+    :accessor iostream
+    :initform nil
+    :type stream
+    )
+   (frame-length
+    :initarg :frame-length
+    :accessor frame-length
+    :type integer)
+   ))
+
+(define-condition unexpected-buf-length (error) ())
+(defmethod write-frame ((codec fixed-length-based-frame-codec) buf &key header)
+  (when (/= 0
+            (mod (length buf) (frame-length codec)))
+    (error 'unexpected-buf-length)
+    )
+  (loop for i from 0 below (/ (length buf) (frame-length codec))
+        do (write-sequence buf (iostream codec) :start (* i (frame-length codec)) :end (* (1+ i) (frame-length codec))))
+  (force-output (iostream codec))
+  )
+
+(defmethod read-frame ((codec fixed-length-based-frame-codec))
+  (let ((buf (make-array (frame-length codec) :element-type '(unsigned-byte 8) :initial-element 2)))
+
+    (do ((position (read-sequence buf (iostream codec) :start 0 :end (frame-length codec))
+                   (read-sequence buf (iostream codec) :start position :end (frame-length codec))))
+        ((= position (frame-length codec)) buf)
+      (format t "position ~a~%")
+      ))
   )
