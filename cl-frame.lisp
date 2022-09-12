@@ -207,9 +207,11 @@
 (defmethod read-frame ((codec line-based-frame-codec))
   (let ((crlfbytes (aref (flexi-streams:string-to-octets "\n") 0))
         (buf (make-array 0 :fill-pointer t :adjustable t)))
-    (do ((singal-byte (read-byte (iostream codec)) (read-byte (iostream codec))))
+    (do ((singal-byte (read-byte (iostream codec) t nil) (read-byte (iostream codec) t nil)))
         ((eq singal-byte crlfbytes) buf)
-      (vector-push-extend singal-byte buf))
+      (when (not (eq singal-byte nil))
+        (vector-push-extend singal-byte buf))
+      )
     )
   )
 
@@ -240,9 +242,12 @@
 
 (defmethod read-frame ((codec delimited-based-frame-codec))
   (let ((buf (make-array 0 :fill-pointer t :adjustable t)))
-    (do ((singal-byte (read-byte (iostream codec)) (read-byte (iostream codec))))
+    (do ((singal-byte (read-byte (iostream codec) t nil) (read-byte (iostream codec) t nil)))
         ((eq singal-byte (delimiter codec)) buf)
-      (vector-push-extend singal-byte buf)))
+
+      (when (not (eq singal-byte nil))
+        (vector-push-extend singal-byte buf))
+      ))
   )
 
 ;; fixed length based frame codec
@@ -278,6 +283,5 @@
     (do ((position (read-sequence buf (iostream codec) :start 0 :end (frame-length codec))
                    (read-sequence buf (iostream codec) :start position :end (frame-length codec))))
         ((= position (frame-length codec)) buf)
-      (format t "position ~a~%")
       ))
   )
