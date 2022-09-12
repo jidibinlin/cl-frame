@@ -7,8 +7,8 @@ cl-frame planed to implement
 + [DONE] delimiter-based-frame-codec
 ** methods definition
 *** write-frame
-keyward arguments only work for length-field-based-frame-codec. For length-field-based-frame-codec need to pretend a header.
-keyward arguments not wor for "fixed-length-frame-codec", "line-based-frame-codec", "delimited-based-frame-codec"
+keyward arguments *only work* for length-field-based-frame-codec. For length-field-based-frame-codec need to pretend a header.
+keyward arguments not work for "fixed-length-frame-codec", "line-based-frame-codec", "delimited-based-frame-codec"
 #+begin_src lisp
   (defgeneric write-frame (obj buf &key &allow-other-keys)
     (:documentation "pack buf to frame and send it")
