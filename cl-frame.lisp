@@ -90,25 +90,25 @@
       (2 (progn
            (setf len-buf (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 2)
-           (setf length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- (reverse len-buf))))
        (values len-buf length))
 
       (3 (progn
            (setf len-buf (make-array 3 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 3)
-           (setf length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- (reverse len-buf))))
        (values len-buf length))
 
       (4 (progn
            (setf len-buf (make-array 4 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 4)
-           (setf length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- (reverse len-buf))))
        (values len-buf length))
 
       (8 (progn
            (setf len-buf (make-array 8 :element-type '(unsigned-byte 8) :initial-element 0))
            (read-sequence len-buf (iostream codec) :start 0 :end 8)
-           (setf length (bit-smasher:int<- len-buf)))
+           (setf length (bit-smasher:int<- (reverse len-buf))))
        (values len-buf length))
       )
     )

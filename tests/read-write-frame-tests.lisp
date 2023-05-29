@@ -24,86 +24,88 @@
 
 
 (deftest cl-frame:length-field-based-frame-codec
-  ;; 2 bytes length field at offset 0, do not strip header
-  ;; lengthFieldOffset   = 0
-  ;; lengthFieldLength   = 2
-  ;; lengthAdjustment    = 0
-  ;; initialBytesToStrip = 0 (= do not strip header)
-  ;; BEFORE DECODE (14 bytes)         AFTER DECODE (14 bytes)
+    ;; 2 bytes length field at offset 0, do not strip header
+    ;; lengthFieldOffset   = 0
+    ;; lengthFieldLength   = 2
+    ;; lengthAdjustment    = 0
+    ;; initialBytesToStrip = 0 (= do not strip header)
+    ;; BEFORE DECODE (14 bytes)         AFTER DECODE (14 bytes)
 
-  ;; +--------+----------------+      +--------+----------------+
-  ;; | Length | Actual Content |----->| Length | Actual Content |
-  ;; | 0x000C | "HELLO, WORLD" |      | 0x000C | "HELLO, WORLD" |
-  ;; +--------+----------------+      +--------+----------------+
-  (testing "2 bytes length field at offset 0, do not strip header"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :length-includes-length-field-length nil))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 0
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :initial-bytes-to-strip 0))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              msg))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+    ;; +--------+----------------+      +--------+----------------+
+    ;; | Length | Actual Content |----->| Length | Actual Content |
+    ;; | 0x000C | "HELLO, WORLD" |      | 0x000C | "HELLO, WORLD" |
+    ;; +--------+----------------+      +--------+----------------+
+    (testing "2 bytes length field at offset 0, do not strip header"
+             (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                         :length-field-length 2
+                                                                         :length-adjustment 0
+                                                                         :length-includes-length-field-length nil))
+                               (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                         :length-field-offset 0
+                                                                         :length-field-length 2
+                                                                         :length-adjustment 0
+                                                                         :initial-bytes-to-strip 0))
+                               (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                           (bt:make-thread (lambda ()
+                                             (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                               (unwind-protect (progn
+                                                                 (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                      :encoder-config enc-config
                                                                                                       :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket)
-                      )))
+                                                                                                      :iostream (usocket:socket-stream conn))
+                                                                                       msg))
+                                                 (usocket:socket-close conn)))))
+                           (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                             (unwind-protect
+                                  (cl-frame:read-frame
+                                   (make-instance 'cl-frame:length-field-based-frame-codec
+                                                  :encoder-config enc-config
+                                                  :decoder-config dec-config
+                                                  :iostream stream))
+                               (usocket:socket-close socket)
+                               )))
 
-                (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
-                      (body (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (cl-frame:put-uint16 cl-frame:big-endian head 12)
+                         (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
+                               (body (flexi-streams:string-to-octets "HELLO, WORLD")))
+                           (cl-frame:put-uint16 cl-frame:big-endian head 12)
 
-                  (concatenate 'vector head body)))
-        "2 bytes length field at offset 0, do not strip header"))
+                           (concatenate 'vector head body)))
+                 "2 bytes length field at offset 0, do not strip header"))
 
   (testing "2 bytes length field at offset 0, do not strip header-large"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :length-includes-length-field-length nil))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 0
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :initial-bytes-to-strip 0))
-                      (msg (make-array (1- (expt 2 16)) :element-type '(unsigned-byte 8) :initial-element 12)))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              msg))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket)
-                      )))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 0
+                                                                       :length-includes-length-field-length nil))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 0
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 0
+                                                                       :initial-bytes-to-strip 0))
+                             (msg (make-array (1- (expt 2 16)) :element-type '(unsigned-byte 8) :initial-element 12)))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     msg))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket)
+                             )))
 
-                (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
-                      (body (make-array (1- (expt 2 16)) :element-type '(unsigned-byte 8) :initial-element 12)))
-                  (cl-frame:put-uint16 cl-frame:big-endian head (1- (expt 2 16)))
+                       (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
+                             (body (make-array (1- (expt 2 16)) :element-type '(unsigned-byte 8) :initial-element 12)))
+                         (cl-frame:put-uint16 cl-frame:big-endian head (1- (expt 2 16)))
 
-                  (concatenate 'vector head body)))
-        "2 bytes length field at offset 0, do not strip header-large"))
+                         (concatenate 'vector head body)))
+               "2 bytes length field at offset 0, do not strip header-large"))
 
   ;; ** 2 bytes length field at offset 0, strip header
   ;; lengthFieldOffset   = 0
@@ -117,33 +119,33 @@
   ;; | 0x000C | "HELLO, WORLD" |      | "HELLO, WORLD" |
   ;; +--------+----------------+      +----------------+
   (testing "2 bytes length field at offset 0, strip header"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :length-includes-length-field-length nil))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 0
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :initial-bytes-to-strip 2))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              msg))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket))))
-                (flexi-streams:string-to-octets "HELLO, WORLD"))
-        "2 bytes length field at offset 0, strip header"))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 0
+                                                                       :length-includes-length-field-length nil))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 0
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 0
+                                                                       :initial-bytes-to-strip 2))
+                             (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     msg))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket))))
+                       (flexi-streams:string-to-octets "HELLO, WORLD"))
+               "2 bytes length field at offset 0, strip header"))
 
   ;; ** 2 bytes length field at offset 0, do not strip header,the length field represents the length of the whole message
   ;; lengthFieldOffset   =  0
@@ -158,40 +160,40 @@
   ;; +--------+----------------+      +--------+----------------+
 
   (testing "2 bytes length field at offset 0, do not strip header,the length field represents the length of the whole message"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-length 2
-                                                                :length-adjustment 0
-                                                                :length-includes-length-field-length t))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 0
-                                                                :length-field-length 2
-                                                                :length-adjustment -2
-                                                                :initial-bytes-to-strip 0))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              msg))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket))))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 0
+                                                                       :length-includes-length-field-length t))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 0
+                                                                       :length-field-length 2
+                                                                       :length-adjustment -2
+                                                                       :initial-bytes-to-strip 0))
+                             (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     msg))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket))))
 
-                (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
-                      (body (flexi-streams:string-to-octets "HELLO, WORLD"))
-                      (result))
-                  (cl-frame:put-uint16 cl-frame:big-endian head 14)
+                       (let ((head (make-array 2 :element-type '(unsigned-byte 8)))
+                             (body (flexi-streams:string-to-octets "HELLO, WORLD"))
+                             (result))
+                         (cl-frame:put-uint16 cl-frame:big-endian head 14)
 
-                  (setf result (concatenate 'vector head body))
-                  result))
-        "2 bytes length field at offset 0, do not strip header,the length field represents the length of the whole message"))
+                         (setf result (concatenate 'vector head body))
+                         result))
+               "2 bytes length field at offset 0, do not strip header,the length field represents the length of the whole message"))
 
   ;; ** 3 bytes length field at the end of 5 bytes header, do not strip header
   ;; lengthFieldOffset   = 2 (= the length of Header 1)
@@ -205,41 +207,41 @@
   ;; |  0xCAFE  | 0x00000C | "HELLO, WORLD" |      |  0xCAFE  | 0x00000C | "HELLO, WORLD" |
   ;; +----------+----------+----------------+      +----------+----------+----------------+
   (testing "3 bytes length field at the end of 5 bytes header, do not strip header"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 2
-                                                                :length-field-length 3
-                                                                :length-adjustment 0
-                                                                :length-includes-length-field-length nil))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 2
-                                                                :length-field-length 3
-                                                                :length-adjustment 0
-                                                                :initial-bytes-to-strip 0))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              msg :header (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0)))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket))))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 2
+                                                                       :length-field-length 3
+                                                                       :length-adjustment 0
+                                                                       :length-includes-length-field-length nil))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 2
+                                                                       :length-field-length 3
+                                                                       :length-adjustment 0
+                                                                       :initial-bytes-to-strip 0))
+                             (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     msg :header (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0)))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket))))
 
-                (let ((head (make-array 3 :element-type '(unsigned-byte 8)))
-                      (body (flexi-streams:string-to-octets "HELLO, WORLD"))
-                      (result))
-                  (cl-frame:put-uint24 cl-frame:big-endian head 12)
+                       (let ((head (make-array 3 :element-type '(unsigned-byte 8)))
+                             (body (flexi-streams:string-to-octets "HELLO, WORLD"))
+                             (result))
+                         (cl-frame:put-uint24 cl-frame:big-endian head 12)
 
-                  (setf result (concatenate 'vector (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0) head body))
-                  result))
-        "3 bytes length field at the end of 5 bytes header, do not strip header"))
+                         (setf result (concatenate 'vector (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0) head body))
+                         result))
+               "3 bytes length field at the end of 5 bytes header, do not strip header"))
 
   ;; ** 3 bytes length field at the beginning of 5 bytes header, do not strip header
   ;; lengthFieldOffset   = 0
@@ -254,41 +256,41 @@
   ;; +----------+----------+----------------+      +----------+----------+----------------+
 
   (testing "3 bytes length field at the beginning of 5 bytes header, do not strip header"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 0
-                                                                :length-field-length 3
-                                                                :length-adjustment -2
-                                                                :length-includes-length-field-length nil))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 0
-                                                                :length-field-length 3
-                                                                :length-adjustment 2
-                                                                :initial-bytes-to-strip 0))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              (concatenate 'vector (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0) msg)))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket))))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 0
+                                                                       :length-field-length 3
+                                                                       :length-adjustment -2
+                                                                       :length-includes-length-field-length nil))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 0
+                                                                       :length-field-length 3
+                                                                       :length-adjustment 2
+                                                                       :initial-bytes-to-strip 0))
+                             (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     (concatenate 'vector (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0) msg)))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket))))
 
-                (let ((head (make-array 3 :element-type '(unsigned-byte 8)))
-                      (body (flexi-streams:string-to-octets "HELLO, WORLD"))
-                      (result))
-                  (cl-frame:put-uint24 cl-frame:big-endian head 12)
+                       (let ((head (make-array 3 :element-type '(unsigned-byte 8)))
+                             (body (flexi-streams:string-to-octets "HELLO, WORLD"))
+                             (result))
+                         (cl-frame:put-uint24 cl-frame:big-endian head 12)
 
-                  (setf result (concatenate 'vector head (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0) body))
-                  result))
-        "3 bytes length field at the beginning of 5 bytes header, do not strip header"))
+                         (setf result (concatenate 'vector head (make-array 2 :element-type '(unsigned-byte 8) :initial-element 0) body))
+                         result))
+               "3 bytes length field at the beginning of 5 bytes header, do not strip header"))
 
   ;; ** 2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field
   ;; lengthFieldOffset   = 1 (= the length of HDR1)
@@ -303,42 +305,42 @@
   ;; +------+--------+------+----------------+      +------+----------------+
 
   (testing "bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 1
-                                                                :length-field-length 2
-                                                                :length-adjustment -1
-                                                                :length-includes-length-field-length nil))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 1
-                                                                :length-field-length 2
-                                                                :length-adjustment 1
-                                                                :initial-bytes-to-strip 3))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              (concatenate 'vector (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0) msg ):header (make-array 1 :element-type '(unsigned-byte 8))))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket))))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 1
+                                                                       :length-field-length 2
+                                                                       :length-adjustment -1
+                                                                       :length-includes-length-field-length nil))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 1
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 1
+                                                                       :initial-bytes-to-strip 3))
+                             (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     (concatenate 'vector (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0) msg ):header (make-array 1 :element-type '(unsigned-byte 8))))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket))))
 
-                (let ((head (make-array 1 :element-type '(unsigned-byte 8)))
-                      (body (flexi-streams:string-to-octets "HELLO, WORLD"))
-                      (result))
-                  ;; (cl-frame:put-uint24 cl-frame:big-endian head 12)
-                  (setf (aref head 0) (aref (bit-smasher:octets<- 0) 0))
+                       (let ((head (make-array 1 :element-type '(unsigned-byte 8)))
+                             (body (flexi-streams:string-to-octets "HELLO, WORLD"))
+                             (result))
+                         ;; (cl-frame:put-uint24 cl-frame:big-endian head 12)
+                         (setf (aref head 0) (aref (bit-smasher:octets<- 0) 0))
 
-                  (setf result (concatenate 'vector head body))
-                  result))
-        "2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field"))
+                         (setf result (concatenate 'vector head body))
+                         result))
+               "2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field"))
   ;; ** 2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field, the length field represents the length of the whole message
   ;; lengthFieldOffset   =  1
   ;; lengthFieldLength   =  2
@@ -352,42 +354,42 @@
   ;; +------+--------+------+----------------+      +------+----------------+
 
   (testing "2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field, the length field represents the length of the whole message"
-    (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 1
-                                                                :length-field-length 2
-                                                                :length-adjustment 1
-                                                                :length-includes-length-field-length t))
-                      (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
-                                                                :length-field-offset 1
-                                                                :length-field-length 2
-                                                                :length-adjustment -3
-                                                                :initial-bytes-to-strip 3))
-                      (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
-                  (bt:make-thread (lambda ()
-                                    (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
-                                      (unwind-protect (progn
-                                                        (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
-                                                                                             :encoder-config enc-config
-                                                                                             :decoder-config dec-config
-                                                                                             :iostream (usocket:socket-stream conn))
-                                                                              (concatenate 'vector (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0) msg ):header (make-array 1 :element-type '(unsigned-byte 8))))
-                                        (usocket:socket-close conn)))))
-                  (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
-                    (unwind-protect
-                         (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
-                                                                                                      :decoder-config dec-config
-                                                                                                      :iostream stream))
-                      (usocket:socket-close socket))))
+           (ok (equalp (let ((enc-config (cl-frame:make-encoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 1
+                                                                       :length-field-length 2
+                                                                       :length-adjustment 1
+                                                                       :length-includes-length-field-length t))
+                             (dec-config (cl-frame:make-decoder-config :byte-order cl-frame:big-endian
+                                                                       :length-field-offset 1
+                                                                       :length-field-length 2
+                                                                       :length-adjustment -3
+                                                                       :initial-bytes-to-strip 3))
+                             (msg (flexi-streams:string-to-octets "HELLO, WORLD")))
+                         (bt:make-thread (lambda ()
+                                           (let ((conn (usocket:socket-accept listener :element-type '(unsigned-byte 8))))
+                                             (unwind-protect (progn
+                                                               (cl-frame:write-frame (make-instance 'cl-frame:length-field-based-frame-codec
+                                                                                                    :encoder-config enc-config
+                                                                                                    :decoder-config dec-config
+                                                                                                    :iostream (usocket:socket-stream conn))
+                                                                                     (concatenate 'vector (make-array 1 :element-type '(unsigned-byte 8) :initial-element 0) msg ):header (make-array 1 :element-type '(unsigned-byte 8))))
+                                               (usocket:socket-close conn)))))
+                         (usocket:with-client-socket (socket stream "localhost" 1990 :element-type '(unsigned-byte 8))
+                           (unwind-protect
+                                (cl-frame:read-frame (make-instance 'cl-frame:length-field-based-frame-codec :encoder-config enc-config
+                                                                                                             :decoder-config dec-config
+                                                                                                             :iostream stream))
+                             (usocket:socket-close socket))))
 
-                (let ((head (make-array 1 :element-type '(unsigned-byte 8)))
-                      (body (flexi-streams:string-to-octets "HELLO, WORLD"))
-                      (result))
-                  ;; (cl-frame:put-uint24 cl-frame:big-endian head 12)
-                  (setf (aref head 0) (aref (bit-smasher:octets<- 0) 0))
+                       (let ((head (make-array 1 :element-type '(unsigned-byte 8)))
+                             (body (flexi-streams:string-to-octets "HELLO, WORLD"))
+                             (result))
+                         ;; (cl-frame:put-uint24 cl-frame:big-endian head 12)
+                         (setf (aref head 0) (aref (bit-smasher:octets<- 0) 0))
 
-                  (setf result (concatenate 'vector head body))
-                  result))
-        "2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field, the length field represents the length of the whole message"))
+                         (setf result (concatenate 'vector head body))
+                         result))
+               "2 bytes length field at offset 1 in the middle of 4 bytes header, strip the first header field and the length field, the length field represents the length of the whole message"))
   )
 
 ;; * line based frame codec
